@@ -1,0 +1,261 @@
+---
+title: "Actividad 2"
+format:
+  html:
+      toc: true
+      html-math-method: katex
+      embed-resources: true
+      self-coointained-math: true
+      df-print: kable
+author: "Lizarraga Beltran; Julio"
+
+editor: source
+---
+
+## Github Repository
+
+https://github.com/SeventhMrMagic/MA2003_codes
+
+## Librerias
+```{python}
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from scipy import stats
+```
+
+
+## Funciones
+### Ejercicio 1
+```{python}
+def beta1(xdata, ydata):
+    Ax = np.mean(xdata)
+    Ay = sum(ydata/len(ydata))
+    Sx = 0
+    Sy = 0
+    Sxx= 0
+    Sxy = 0
+    for i in range(len(ydata)):
+        Sx = (xdata[i]) - Ax
+        Sy = ydata[i] - Ay
+        Sxx += Sx*Sy
+        Sxy += ((xdata[i]) - Ax)**2
+    return (Sxx)/(Sxy)
+
+def beta0(xdata, ydata):
+    return np.mean(ydata)- beta1(xdata,ydata)*np.mean(xdata)
+```
+
+### Ejercicio 2
+```{python}
+def SSR(data,model):
+    SSR = 0
+    for i in range(len(data)):
+        SSR += (model[i] - np.mean(data))**2
+    return SSR
+
+def SSE(data,model):
+    SSE = 0
+    for i in range(len(data)):
+        SSE += (data[i] - model[i])**2
+    return SSE
+
+def SST(data):
+    SST = 0
+    for i in range(len(data)):
+        SST += (data[i]- np.mean(data))**2
+    return SST
+
+def MSR(data,model,p):
+    return SSR(data,model)/(p)
+
+def MSE(data,model,n,p):
+    return SSE(data,model)/(n-p-1)
+```
+
+### Ejercicio 3 y 4
+``` {python}
+def Sxx(data):
+    return sum((data - np.mean(data))**2)
+
+def ttest1(b1, mse, data):
+    return b1/np.sqrt(mse/Sxx(data))
+
+def ttest0(b0,mse,data):
+    return b0/(np.sqrt(mse*(1/len(data)+np.mean(data)**2/Sxx(data))))
+    
+```
+
+### Ejercicio 5
+
+```{python}
+def SE(mse, data):
+    return np.sqrt(mse * (1/len(data) + (data - np.mean(data))**2/Sxx(data)))
+
+```
+
+### Ejercicio 6
+
+```{python}
+
+
+def SEpred(mse, data):
+
+    return np.sqrt(mse * (1 + 1/len(data) + (data - np.mean(data))**2/Sxx(data)))
+
+```
+
+## Actividad
+
+### Variables
+
+```{python}
+datos = pd.DataFrame({
+    'Estudiante': range(1, 11),
+    'Horas': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'Nota': [3.2, 4.5, 5.0, 6.8, 7.0, 8.5, 9.0, 9.2, 9.8, 10.0]
+})
+n = len(datos['Nota'])
+p = 1
+```
+
+### 1. Usando MCO o la fórmula cerrada, encuentra tu modelo lineal.
+
+```{python}
+
+```
+
+```{python}
+B1 = beta1(datos['Horas'], datos['Nota'])
+B0 = beta0(datos['Horas'], datos['Nota'])
+y = B0 + B1*datos['Horas']
+```
+
+
+
+```{python}
+plt.scatter(datos['Horas'],datos['Nota'])
+plt.plot(datos['Horas'], y, label = f"y(x) = {B0} + {B1}x", color = "RED")
+plt.legend()
+plt.title("Simple Linear Regression")
+plt.xlabel("Horas")
+plt.ylabel("Nota")
+```
+
+### 2. Crea tu tabla ANOVA
+
+```{python}
+
+ssr = SSR(datos['Nota'],y)
+sse = SSE(datos['Nota'],y)
+sst = SST(datos['Nota'])
+msr = MSR(data = datos['Nota'], model = y, p = 1)
+mse = MSE(datos['Nota'],y,n = len(datos['Nota']),p = 1)
+```
+
+```{python} 
+print(f"SSR: {ssr}")
+print(f"SSE: {sse}")
+print(f"SST: {sst}")
+print(f"SSR + SSS = {ssr + sse}")
+print(f"SST = SSR + SSE -> {sst == ssr + sse}")
+print(f"MSR: {msr}")
+print(f"MSE: {mse}")
+```
+
+```{python}
+
+ANOVA = pd.DataFrame({
+    'Fuente': ['Regresion', 'Error', 'Total'],
+    'SS': [ssr, sse, sst],
+    'df': [p, n-p-1, n-1],
+    'MS': [msr, mse, ''],
+    'F': [msr/mse,'','']
+})
+```
+
+```{python}
+print(ANOVA)
+```
+
+### 3. realiza Prueba F y t
+
+```{python}
+F_05_1_8 = 5.32
+print (f'F: = {ANOVA["F"][0]}')
+print(f"F critical: {F_05_1_8}")
+if(ANOVA["F"][0] > F_05_1_8):
+    print(f"{ANOVA["F"][0]} > {F_05_1_8} -> Modelo Significativo")
+
+t1 = ttest1(B1, mse, datos['Horas'])
+t0 = ttest0(B0, mse, datos['Horas'])
+
+T_05_8 = 2.306
+
+print (f'T(B1): = {t1}')
+print (f't critical = {T_05_8}')
+if( np.abs(t1) > T_05_8):
+    print(f"{np.abs(t1)} > {T_05_8} -> B1 Significativo")
+
+print (f'T(B0): = {t0}')
+
+```
+
+### 4. Verifica la relación entre F y t
+```{python}
+print(f'F = t2?  \n{msr/mse == t1**2}')
+```
+
+### 5. Encuentra los intervalos de confianza. 
+
+```{python}
+t_025_8 = stats.t.ppf(0.975, n -2)
+SE_B1 = (t1**-1)*B1
+SE_B0 = (t0**-1)*B0
+IntCofB1 = [B1 - t_025_8*SE_B1,B1 + t_025_8*SE_B1]
+IntCofB0 = [B0- t_025_8*SE_B0,B0+ t_025_8*SE_B0]
+
+```
+
+```{python}
+IntCof = pd.DataFrame({
+   "-" :  y - t_025_8*SE(mse, datos['Horas']),
+   "+" :  y + t_025_8*SE(mse, datos['Horas'])
+})
+```
+
+```{python}
+print(f"Intervalo de Confianza de B1: \n{IntCofB1}")
+print(f"Intervalo de Confianza de B0: \n{IntCofB0}")
+
+
+for i in range(len(IntCof["+"])):
+    print(f"Intervalo de Confianza X{i + 1}: \n[{IntCof["-"][i]}, {IntCof["+"][i]}]")
+
+
+```
+
+
+### 6. Crea la tabla de IC de la media y IP
+
+```{python}
+IP = pd.DataFrame({
+    "-" : y - t_025_8 * SEpred(mse, datos["Horas"]),
+    "+" : y + t_025_8 * SEpred(mse, datos["Horas"])
+})
+
+TablaFinal = pd.DataFrame({
+    "Horas": datos["Horas"],
+    "Nota" : datos["Nota"],
+    "y" : y,
+    "IC 95% (-)": IntCof["-"],
+    "IC 95% (+)": IntCof["+"],
+    "IP 95% (-)" : IP["-"],
+    "IP 95% (+)" : IP["+"],
+})
+```
+
+```{python}
+print(TablaFinal)
+```
+
